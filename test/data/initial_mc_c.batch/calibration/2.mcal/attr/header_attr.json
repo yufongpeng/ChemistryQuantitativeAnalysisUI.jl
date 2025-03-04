@@ -1,0 +1,18 @@
+{
+    "values": [
+        "Sample",
+        "Level",
+        "Y",
+        "X",
+        "Predicted X",
+        "Accuracy"
+    ],
+    "line_color": "darkgreen",
+    "font": {
+        "color": "white",
+        "size": 12
+    },
+    "height": 24,
+    "align": "center",
+    "fill_color": "limegreen"
+}

@@ -1,0 +1,4 @@
+{
+    "color": ["blue", "red"], 
+    "inspector_label": "@jl cal -> (self, i, p) -> string(@q(id, ':', ' '), cal.table.id[i], @q('\n', level, ':', ' '), cal.table.level[i], @q('\n', accuracy, ':', ' '), round(cal.table.accuracy[i]; sigdigits = 4))"
+}

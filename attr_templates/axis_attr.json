@@ -1,0 +1,6 @@
+{
+    "title": "@jl cal -> string(first(cal.analyte))", 
+    "xlabel": "Concentration (nM)", 
+    "ylabel": "Abundance", 
+    "titlesize": 20
+}

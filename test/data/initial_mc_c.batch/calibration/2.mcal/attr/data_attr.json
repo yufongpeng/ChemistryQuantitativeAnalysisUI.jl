@@ -1,0 +1,14 @@
+{
+    "digits": [
+        3,
+        2,
+        2,
+        null
+    ],
+    "sigdigits": [
+        null,
+        null,
+        null,
+        4
+    ]
+}

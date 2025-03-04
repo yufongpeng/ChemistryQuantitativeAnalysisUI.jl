@@ -1,0 +1,26 @@
+{
+    "line_color": "darkgreen",
+    "font": {
+        "size": 12
+    },
+    "subheader_color": "rgb(235, 193, 238)",
+    "height": 24,
+    "align": "right",
+    "digits": [
+        4,
+        4,
+        4,
+        4
+    ],
+    "sigdigits": [
+        null,
+        null,
+        null,
+        null
+    ],
+    "fill_color": [
+        "honeydew",
+        "lightpink",
+        "darkseagreen"
+    ]
+}
