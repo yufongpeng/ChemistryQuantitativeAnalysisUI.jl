@@ -306,10 +306,16 @@ function cal_ui!(input::Union{Batch, <: AbstractString};
                 x_value = xlevel[s] 
                 id = findall(==(x_value), batch.calibration[i].table.x)
                 y_value = batch.calibration[i].table.y[id]
-                Δy = length(y_value) == 1 ? 0.2 * y_value[1] : -reduce(-, extrema(y_value))
+                Δy = length(unique(y_value)) == 1 ? abs(0.2 * y_value[1]) : -reduce(-, extrema(y_value))
                 yl = extrema(y_value) .+ (-Δy, Δy)
                 Δx = Δy * xscale / yscale
                 xl = x_value .+ (-Δx, Δx)
+                if isapprox(xl...)
+                    xl = x_value .+ (-eps(), eps())
+                end
+                if isapprox(yl...)
+                    yl = y_value .+ (-eps(), eps())
+                end
                 limits!(ax, xl, yl)
             end
         end
