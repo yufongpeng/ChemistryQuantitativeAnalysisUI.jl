@@ -64,13 +64,13 @@ function cal_ui!(input::Union{Batch, <: AbstractString};
     attrs = isnothing(attrs) ? Dict{Symbol, Any}() : attrs
     input_attrs = nothing 
     temp_attrs = nothing
-    override_attrs = nothing
+    override_attrs = Dict{Symbol, Any}()
     if attr_override == :input
         override_attrs = input_attrs = get_batch_attr(batch, input_attr)
     elseif attr_override == :temp 
         override_attrs = temp_attrs = get_batch_attr(batch, temp_attr)
     end
-    fallback_attrs = nothing
+    fallback_attrs = Dict{Symbol, Any}()
     if attr_fallback == :input
         fallback_attrs = isnothing(input_attrs) ? get_batch_attr(batch, input_attr) : input_attrs
     elseif attr_fallback == :temp 
@@ -78,7 +78,7 @@ function cal_ui!(input::Union{Batch, <: AbstractString};
     end
     # each attr +> each cal
     ks = [:acc_attr, :axis_attr, :cells_attr, :data_attr, :fig_attr, :header_attr, :layout_attr, :line_attr, :scatter_attr]
-    if attr_fallback == attr_override
+    if attr_fallback == attr_override && !isempty(override_attrs) && !isempty(fallback_attrs)
         for a in ks 
             if haskey(attrs, a) && haskey(fallback_attrs, a)
                 if length(attrs[a]) != length(fallback_attrs[a]) 
@@ -95,7 +95,7 @@ function cal_ui!(input::Union{Batch, <: AbstractString};
                 attrs[a] = fallback_attrs[a]
             end
         end
-    elseif isnothing(attr_fallback)
+    elseif !isempty(override_attrs) && isempty(fallback_attrs)
         for a in ks 
             if haskey(attrs, a) && haskey(override_attrs, a)
                 if length(attrs[a]) != length(override_attrs[a]) 
@@ -110,7 +110,7 @@ function cal_ui!(input::Union{Batch, <: AbstractString};
                 end
             end
         end
-    elseif isnothing(attr_override)
+    elseif !isempty(fallback_attrs) && isempty(override_attrs)
         for a in ks 
             if haskey(attrs, a) && haskey(fallback_attrs, a)
                 if length(attrs[a]) != length(fallback_attrs[a]) 
@@ -306,10 +306,16 @@ function cal_ui!(input::Union{Batch, <: AbstractString};
                 x_value = xlevel[s] 
                 id = findall(==(x_value), batch.calibration[i].table.x)
                 y_value = batch.calibration[i].table.y[id]
-                Δy = length(y_value) == 1 ? 0.2 * y_value[1] : -reduce(-, extrema(y_value))
+                Δy = length(unique(y_value)) == 1 ? abs(0.2 * y_value[1]) : -reduce(-, extrema(y_value))
                 yl = extrema(y_value) .+ (-Δy, Δy)
                 Δx = Δy * xscale / yscale
                 xl = x_value .+ (-Δx, Δx)
+                if isapprox(xl...)
+                    xl = x_value .+ (-eps(), eps())
+                end
+                if isapprox(yl...)
+                    yl = y_value .+ (-eps(), eps())
+                end
                 limits!(ax, xl, yl)
             end
         end
