@@ -1,0 +1,11 @@
+[analyte]
+Analyte5
+
+[isd]
+nothing
+
+[model]
+LinearCalibrator(ConstWeight())
+
+[delim]
+\t
