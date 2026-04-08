@@ -1,6 +1,6 @@
 name = "ChemistryQuantitativeAnalysisUI"
 uuid = "972148b6-472c-424e-8065-54bf210c1201"
-version = "0.2.1"
+version = "0.2.0"
 authors = ["Yu-Fong Peng <sciphypar@gmail.com>"]
 
 [deps]
@@ -27,7 +27,7 @@ JSON3 = "1.14"
 PlotlyJS = "0.18"
 Reexport = "1"
 TypedTables = "1.4"
-julia = "1.9"
+julia = "1.12"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
