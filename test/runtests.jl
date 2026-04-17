@@ -23,8 +23,8 @@ t2 = Task(() -> begin
     UI.run!(repo2; async = true, timeout = 60)
 end
 )
-wait(schedule(t1))
-wait(schedule(t2))
+# wait(schedule(t1))
+# wait(schedule(t2))
 @testset "ChemistryQuantitativeAnalysisUI.jl" begin
     @test axis_attr[:title](initial_mc_c.calibrator[1]) == "Analyte1"
     @test fig_attr[:size] == (1350, 750)

@@ -13,6 +13,7 @@
         timeout = -1,
         dir = input isa AbstractString ? dirname(input) : pwd(), 
         file = "batch",
+        newfile = true, 
         attrs = nothing,
         attr_override = nothing, # :input / :temp
         attr_fallback = :input, # :input / :temp
@@ -34,6 +35,7 @@ Interactively calibrate signal and concentration.
 * `timeout`: `Number`, maximum wait time before closing the gui. -1 inidicates no limit.
 * `dir`: directory for saving objects. If the input is not a ".batch" directory, a new batch with name `file`.batch (or `file`(1).batch ...) is generated in `dir`.
 * `file`: filename of batch. If the input is not a ".batch" directory, a new batch with name `file`.batch (or `file`(1).batch ...) is generated in `dir`.
+* `newfile`: whether a new `file`(1).batch is generated if `file`.batch already exists.
 * `attrs`: `Dict` mapping attribute to a vector of `Dict` for each calibration. It is read from a valid batch directory `dir` or becomes an empty dictionary by setting it `nothing` (default).
 * `attr_override`: use input_attr (`:input`), temp_attr (`:temp`) or nothing to override defined attributes in `attrs`.
 * `attr_fallback`: use input_attr (`:input`), temp_attr (`:temp`) or nothing for undefined attributes in `attrs`.
@@ -50,7 +52,8 @@ function run!(input::Union{Batch, <: AbstractString};
             async = false,
             timeout = -1,
             dir = input isa AbstractString ? dirname(input) : pwd(), 
-            file = "batch",
+            file = "batch", 
+            newfile = true, 
             attrs = nothing, 
             attr_override = nothing, # :input / :temp
             attr_fallback = :temp, # :input / :temp
@@ -78,10 +81,12 @@ function run!(input::Union{Batch, <: AbstractString};
         dir = Ref{String}(dir)
         dirs = readdir(dir[])
         filename = string(file, ".batch")
-        i = 0
-        while !isnothing(findfirst(==(filename), dirs))
-            i += 1
-            filename = string(file, "(", i, ").batch")
+        if newfile
+            i = 0
+            while !isnothing(findfirst(==(filename), dirs))
+                i += 1
+                filename = string(file, "(", i, ").batch")
+            end
         end
         batchdir = Ref{String}(joinpath(dir[], filename))
     end
