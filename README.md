@@ -127,4 +127,4 @@ TEMP_ATTR = [
 
 In template files, julia expression can be wrapped as `"@jl julia_expression"`, and string in the expression has to be chabged to `@q string...`. Reserved strings can be build from the corresponding characters. See [`attr_templates`](attr_templates). 
 
-Users can also modify each json file in `calibration/*.mcal/attr/`. Julia expression in not allowed for these attributes files.
+Users can also modify each json file in `calibrator/*.ecal/attr/`. Julia expression in not allowed for these attributes files.
