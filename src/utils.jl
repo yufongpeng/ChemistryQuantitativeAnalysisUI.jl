@@ -82,28 +82,28 @@ function sampletable(cal::ExternalCalibrator, at, method::AnalysisMethod;
         ax = getanalyte(getproperty(at, method.est_conc), analyte)
         an = method.nom_conc in propertynames(at) ? map(getanalyte(getproperty(at, method.nom_conc), analyte)) do x 
                 isfinite(x) ? round(x; sigdigits = sig[1], digits = dig[1]) : isnan ? missing : x 
-            end : repeat([""], length(sampleobj(at)))
+            end : repeat([""], length(samplename(at)))
         aacc = method.nom_conc in propertynames(at) ? map(getanalyte(getproperty(at, method.acc), analyte)) do x 
                 isfinite(x) ? round(x; sigdigits = sig[1], digits = dig[1]) : isnan ? missing : x 
-            end : repeat([""], length(sampleobj(at)))
-        push!(cs[1], analyte)
+            end : repeat([""], length(samplename(at)))
+        push!(cs[1], Symbol.(analyte))
         push!(color1, sc)
         push!(color2, sc)
         push!(color3, sc)
         for v in @view cs[2:end]
             push!(v, "")
         end
-        append!(cs[1], sampleobj(at))
-        append!(cs[2], repeat([""], length(sampleobj(at))))
+        append!(cs[1], samplename(at))
+        append!(cs[2], repeat([""], length(samplename(at))))
         append!(cs[3], round.(ay; sigdigits = sig[1], digits = dig[1]))
         append!(cs[4], an)
-        # append!(cs[4], repeat([""], length(sampleobj(at))))
+        # append!(cs[4], repeat([""], length(samplename(at))))
         append!(cs[5], round.(ax; sigdigits = sig[3], digits = dig[3]))
         append!(cs[6], aacc)
         c2 = [(i >= lloq && i <= uloq) ? fc1 : fc2 for i in ax]
-        append!(color1, repeat([fc1], length(sampleobj(at))))
+        append!(color1, repeat([fc1], length(samplename(at))))
         append!(color2, c2)
-        append!(color3, repeat([fc1], length(sampleobj(at))))
+        append!(color3, repeat([fc1], length(samplename(at))))
     end
     PlotlyJS.plot(
             table(
@@ -130,8 +130,7 @@ function calibrationdata(calibrator; data_attrs = repeat([Dict(:sigdigits => [4,
     )
 end
 
-function calibrationplotrange(calibrator, acc_attr)
-    xr = dynamic_range(calibrator)
+function calibrationplotrange(calibrator, acc_attr, xr)
     xr = xr .+ (xr[2] - xr[1]) .* (-0.05, 0.05)
     yr = signal_range(calibrator)
     yr = (min(yr[1], minimum(calibrator.table.y)), max(yr[2], maximum(calibrator.table.y)))

@@ -204,7 +204,7 @@ function run!(input::Union{Batch, <: AbstractString};
             tellheight = false
         )
         fig[2, 1] = label_message
-        xr, yr = calibrationplotrange(calibrator[i], acc_attrs[i])
+        xr, yr = calibrationplotrange(calibrator[i], acc_attrs[i], extrema(calibrator[i].table.x))
         limits!(ax, xr, yr)
         table = sampletable(calibrator[i], batch.data, batch.method; layout_attr = layout_attrs[i], header_attr = header_attrs[i], cells_attr = cells_attrs[i], lloq_multiplier = acc_attrs[i][:lloq_multiplier], dev_acc = acc_attrs[i][:dev_acc])
         body!(table_window, table)
@@ -240,7 +240,7 @@ function run!(input::Union{Batch, <: AbstractString};
                 push!(component, x)
             end
             fig[2, 1] = label_message
-            xr, yr = calibrationplotrange(calibrator, acc_attr)
+            xr, yr = calibrationplotrange(calibrator, acc_attr, dynamic_range(calibrator))
             limits!(ax, xr, yr)
             return fig
         end
@@ -320,7 +320,7 @@ function run!(input::Union{Batch, <: AbstractString};
         on(menu_zoom.selection) do s
             s = parse(Int, s)
             if s == 0
-                xr, yr = calibrationplotrange(calibrator[i], acc_attrs[i])
+                xr, yr = calibrationplotrange(calibrator[i], acc_attrs[i], extrema(calibrator[i].table.x))
                 limits!(ax, xr, yr)
             else
                 x_value = xlevel[s] 
