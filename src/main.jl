@@ -149,7 +149,7 @@ function run!(input::Union{Batch, <: AbstractString};
             # ask_savelayout && wait(ask_savelayout_close())
         end
     end
-    function draw!(; message = nothing)
+    function draw!(; message = nothing, origin = nothing, widths = nothing)
         menu_analyte = Menu(fig; options = analytes, default = analytes[i], halign = :left, tellwidth = true)
         label_lp = Label(fig, string(length(unique(calibrator[i].table.x[calibrator[i].table.include])), " levels, ", count(calibrator[i].table.include), " points"); halign = :left, tellwidth = true)
         label_r2 = Label(fig, "R² = $(round(r2(calibrator[i].machine); sigdigits = data_attrs[i][:sigdigits][4], digits = data_attrs[i][:digits][4]))"; halign = :left, tellwidth = true)
@@ -204,8 +204,12 @@ function run!(input::Union{Batch, <: AbstractString};
             tellheight = false
         )
         fig[2, 1] = label_message
-        xr, yr = calibrationplotrange(calibrator[i], acc_attrs[i], extrema(calibrator[i].table.x))
-        limits!(ax, xr, yr)
+        if isnothing(origin) || isnothing(widths)
+            xr, yr = calibrationplotrange(calibrator[i], acc_attrs[i], extrema(calibrator[i].table.x))
+            limits!(ax, xr, yr)
+        else
+            limits(ax, zip(origin, origin .+ widths)...)
+        end
         table = sampletable(calibrator[i], batch.data, batch.method; layout_attr = layout_attrs[i], header_attr = header_attrs[i], cells_attr = cells_attrs[i], lloq_multiplier = acc_attrs[i][:lloq_multiplier], dev_acc = acc_attrs[i][:dev_acc])
         body!(table_window, table)
         function static_draw!(calibrator; 
@@ -252,10 +256,18 @@ function run!(input::Union{Batch, <: AbstractString};
             table = sampletable(calibrator[i], batch.data, batch.method; layout_attr = layout_attrs[i], header_attr = header_attrs[i], cells_attr = cells_attrs[i], lloq_multiplier = acc_attrs[i][:lloq_multiplier], dev_acc = acc_attrs[i][:dev_acc])
             body!(table_window, table)
         end
+        function update_fixaxis!(fn...)
+            origin = ax.targetlimits[].origin
+            widths = ax.targetlimits[].widths
+            for f in fn 
+                f()
+            end
+            limits!(ax, zip(origin, origin .+ widths)...)
+        end
         function update_sc!(check = false, name = nothing)
             delete!(ax, sc)
             sc = scatter!(ax, calibrator[i].table.x, calibrator[i].table.y; get_point_attr(scatter_attrs[i], calibrator[i])...)
-            check && !isnothing(name) &&getproperty(sc, name)[]
+            check && !isnothing(name) && getproperty(sc, name)[]
             DataInspector(sc)
         end
         function update_ax!(component, name, value)
@@ -283,15 +295,15 @@ function run!(input::Union{Batch, <: AbstractString};
             empty!(component)
             delete!(ax)
         end
-        function redraw!(; message = nothing)
+        function redraw!(; message = nothing, origin = ax.targetlimits[].origin, widths = ax.targetlimits[].widths)
             delete_component!()
-            draw!(; message)
+            draw!(; message, origin, widths)
         end
         on(menu_analyte.selection) do s
             j = findfirst(==(s), analytes)
             if j != i
                 i = j
-                redraw!()
+                redraw!(; origin = nothing, widths = nothing)
             end
         end
         on(events(ax).mousebutton) do event
@@ -303,27 +315,32 @@ function run!(input::Union{Batch, <: AbstractString};
                     for id in ids
                         calibrator[i].table.include[id] = !calibrator[i].table.include[id]
                     end
-                    update_sc!()
                     model_calibrator!(calibrator[i], nothing)
-                    update_fig!()
+                    update_fixaxis!(update_sc!, update_fig!)
                 end
             end
         end
         on(menu_type.selection) do s
             update_model!(batch, analyte_id[i], calibrator[i], s)
-            update_fig!()
+            update_fixaxis!(update_fig!)
         end
         on(menu_wt.selection) do s
             update_weight!(batch, analyte_id[i], calibrator[i], s)
-            update_fig!()
+            update_fixaxis!(update_fig!)
+        end
+        zoomstate = false
+        on(ax.targetlimits) do s 
+            zoomstate || (menu_zoom.i_selected[] = 0)
         end
         on(menu_zoom.selection) do s
-            s = parse(Int, s)
-            if s == 0
+            isnothing(s) && return
+            zoomstate = true
+            si = parse(Int, s)
+            if si == 0
                 xr, yr = calibrationplotrange(calibrator[i], acc_attrs[i], extrema(calibrator[i].table.x))
                 limits!(ax, xr, yr)
             else
-                x_value = xlevel[s] 
+                x_value = xlevel[si] 
                 id = findall(==(x_value), calibrator[i].table.x)
                 y_value = calibrator[i].table.y[id]
                 Δy = length(unique(y_value)) == 1 ? abs(0.2 * y_value[1]) : -reduce(-, extrema(y_value))
@@ -338,6 +355,7 @@ function run!(input::Union{Batch, <: AbstractString};
                 end
                 limits!(ax, xl, yl)
             end
+            zoomstate = false
         end
         on(button_confirm.clicks) do s
             label_message.text = ""
@@ -366,11 +384,11 @@ function run!(input::Union{Batch, <: AbstractString};
                 end
             elseif validator.component == :scatter
                 try 
-                    update_sc!(true, validator.name)
+                    update_fixaxis!(() -> update_sc!(true, validator.name))
                     label_message.text = "Calibration Figure atributes modified."
                 catch e 
                     attrs[:scatter] = validator.oldattrs
-                    update_sc!()
+                    update_fixaxis!(update_sc!)
                     label_message.text = isempty(label_message.text[]) ? repr(e) : string(repr(e), "\n", label_message.text[])
                 end
             elseif validator.component in [:line, :axis]
