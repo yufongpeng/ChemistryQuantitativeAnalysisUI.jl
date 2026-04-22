@@ -90,7 +90,7 @@ function run!(input::Union{Batch, <: AbstractString};
         end
         batchdir = Ref{String}(joinpath(dir[], filename))
     end
-    calibrate!(batch)
+    isempty(batch.calibrator) ? calibrate!(batch) : model_calibrator!(batch)
     analyze!(batch)
     calibrator = filter(x -> x isa ExternalCalibrator, batch.calibrator)
     analyte_id = map(x -> findfirst(==(x.analyte), batch.analyte), calibrator)
