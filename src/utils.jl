@@ -132,8 +132,16 @@ end
 
 function calibrationplotrange(calibrator, acc_attr, xr)
     xr = xr .+ (xr[2] - xr[1]) .* (-0.05, 0.05)
-    yr = signal_range(calibrator)
-    yr = (min(yr[1], minimum(calibrator.table.y)), max(yr[2], maximum(calibrator.table.y)))
+    syr = signal_range(calibrator)
+    if isnan(syr[1]) && isnan(syr[2])
+        yr = (minimum(calibrator.table.y), maximum(calibrator.table.y))
+    elseif isnan(syr[1])
+        yr = (minimum(calibrator.table.y), max(syr[2], maximum(calibrator.table.y)))
+    elseif isnan(syr[2])
+        yr = (min(syr[1], minimum(calibrator.table.y)), maximum(calibrator.table.y))
+    else
+        yr = (min(syr[1], minimum(calibrator.table.y)), max(syr[2], maximum(calibrator.table.y)))
+    end
     yr = yr .* ((1 - acc_attr[:dev_acc] * acc_attr[:lloq_multiplier]), (1 + acc_attr[:dev_acc]))
     yr = yr .+ (yr[2] - yr[1]) .* (-0.05, 0.05)
     (xr, yr)

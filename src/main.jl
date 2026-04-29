@@ -163,9 +163,24 @@ function run!(input::Union{Batch, <: AbstractString};
         xlevel = unique(calibrator[i].table.x)
         xrange = calibrationxrange(xlevel)
         scalefactor = reduce(-, extrema(xlevel)) / reduce(-, extrema(calibrator[i].table.y))
-        ln = lines!(ax, xrange.x, predict(calibrator[i].machine, xrange); line_attrs[i]...)
-        menu_ps = Menu(fig; options = ["All analytes", "This analyte"], default = "All analytes", tellwidth = true)
+
+        function draw_lines!(ax, xrange, calibrator, oln = nothing; line_attr...)
+            y = predict(calibrator, xrange)
+            id = findall(!isnan, y)
+            if isnothing(oln)
+                isempty(id) ? nothing : lines!(ax, xrange.x[id], y[id]; line_attr...)
+            elseif isempty(id) 
+                # delete!(oln)
+                oln.args[] = ([calibrator.table.x[1]], [calibrator.table.y[1]])
+                oln
+            else
+                oln.args[] = (xrange.x[id], y[id])
+                oln
+            end
+        end
+        ln = draw_lines!(ax, xrange, calibrator[i]; line_attrs[i]...)
         components = Dict(:axis => ax, :scatter => sc, :line => ln)
+        menu_ps = Menu(fig; options = ["All analytes", "This analyte"], default = "All analytes", tellwidth = true)
         menu_components = Menu(fig; options = vcat(collect(keys(components)), [:layout, :header, :cells, :acc, :data]), default = "axis", halign = :left, tellwidth = true)
         button_confirm = Button(fig; label = "confirm", halign = :right, tellwidth = true)    
         textbox_attr = Textbox(fig; placeholder = "attribute", halign = :left)
@@ -229,7 +244,7 @@ function run!(input::Union{Batch, <: AbstractString};
             ax = Axis(fig[1, 1]; axis_attr...)
             sc = scatter!(ax, calibrator.table.x, calibrator.table.y; get_point_attr(scatter_attr, calibrator)...)
             xrange = calibrationxrange(unique(calibrator.table.x))
-            ln = lines!(ax, xrange.x, predict(calibrator.machine, xrange); line_attr...)
+            ln = draw_lines!(ax, xrange, calibrator; line_attr...)
             fig[1, 2] = vgrid!(
                     label_main, 
                     label_lp,
@@ -271,6 +286,7 @@ function run!(input::Union{Batch, <: AbstractString};
             DataInspector(sc)
         end
         function update_ax!(component, name, value)
+            isnothing(components[component]) && return 
             if length(vectorize(value)) > 1 
                 setproperty!(components[component], name, value)
                 getproperty(components[component], name)[]
@@ -279,9 +295,12 @@ function run!(input::Union{Batch, <: AbstractString};
                 getproperty(components[component], name)[]
             end
         end
+        function update_lines!(ax, xrange, calibrator, oln = nothing; line_attr...)
+            components[:line] = draw_lines!(ax, xrange, calibrator, oln; line_attr...)
+        end
         function update_fig!()
             analyze!(batch)
-            ln.args[] = (ln.args[][1], predict(calibrator[i].machine, xrange))
+            ln = update_lines!(ax, xrange, calibrator[i], ln; line_attrs[i]...)
             label_lp.text = string(length(unique(calibrator[i].table.x[calibrator[i].table.include])), " levels, ", count(calibrator[i].table.include), " points")
             update_label!()
             update_table!()
