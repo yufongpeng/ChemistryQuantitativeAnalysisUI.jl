@@ -39,7 +39,8 @@ function sampletable(cal::ExternalCalibrator, at, method::AnalysisMethod;
     haskey(cells_attr_copy, :sigdigits) && delete!(cells_attr_copy, :sigdigits)
     haskey(cells_attr_copy, :digits) && delete!(cells_attr_copy, :digits)
     color1 = [i ? fc1 : fc3 for i in tbl.include]
-    loq_level = tbl.level[findfirst(tbl.include)]
+    iloq = findfirst(tbl.include)
+    loq_level = isnothing(iloq) ? 0 : tbl.level[iloq]
     ft = @view tbl[tbl.level .> loq_level]
     lt = @view tbl[tbl.level .<= loq_level]
     color3 = vcat(
@@ -75,6 +76,8 @@ function sampletable(cal::ExternalCalibrator, at, method::AnalysisMethod;
     acc = convert(Vector{Any}, round.(tbl.accuracy; sigdigits = sig[4], digits = dig[4]))
     cs = [id, level, y, x, x̂, acc]
     lloq, uloq = dynamic_range(cal)
+    lloq = isnan(lloq) ? Inf : lloq
+    uloq = isnan(uloq) ? -Inf : uloq
     color2 = deepcopy(color1)
     for j in js
         analyte = method.analyte[j]
@@ -100,7 +103,7 @@ function sampletable(cal::ExternalCalibrator, at, method::AnalysisMethod;
         # append!(cs[4], repeat([""], length(samplename(at))))
         append!(cs[5], round.(ax; sigdigits = sig[3], digits = dig[3]))
         append!(cs[6], aacc)
-        c2 = [(i >= lloq && i <= uloq) ? fc1 : fc2 for i in ax]
+        c2 = [isnan(i) ? fc2 : (i >= lloq && i <= uloq) ? fc1 : fc2 for i in ax]
         append!(color1, repeat([fc1], length(samplename(at))))
         append!(color2, c2)
         append!(color3, repeat([fc1], length(samplename(at))))
@@ -133,14 +136,20 @@ end
 function calibrationplotrange(calibrator, acc_attr, xr)
     xr = xr .+ (xr[2] - xr[1]) .* (-0.05, 0.05)
     syr = signal_range(calibrator)
+    ymin, imin = findmin(calibrator.table.y)
+    ymax, imax = findmax(calibrator.table.y)
     if isnan(syr[1]) && isnan(syr[2])
-        yr = (minimum(calibrator.table.y), maximum(calibrator.table.y))
+        yr = (ymin, ymax)
+    elseif isnan(syr[1]) && imin <= imax
+        yr = (ymin, max(syr[2], ymax))
     elseif isnan(syr[1])
-        yr = (minimum(calibrator.table.y), max(syr[2], maximum(calibrator.table.y)))
-    elseif isnan(syr[2])
-        yr = (min(syr[1], minimum(calibrator.table.y)), maximum(calibrator.table.y))
+        yr = (min(syr[1], ymin), ymax)
+    elseif isnan(syr[2]) && imin <= imax
+        yr = (min(syr[1], ymin), ymax)
+    elseif isnan(syr[2]) 
+        yr = (ymin, max(syr[1], ymax))
     else
-        yr = (min(syr[1], minimum(calibrator.table.y)), max(syr[2], maximum(calibrator.table.y)))
+        yr = (min(syr[1], ymin), max(syr[2], ymax))
     end
     yr = yr .* ((1 - acc_attr[:dev_acc] * acc_attr[:lloq_multiplier]), (1 + acc_attr[:dev_acc]))
     yr = yr .+ (yr[2] - yr[1]) .* (-0.05, 0.05)
